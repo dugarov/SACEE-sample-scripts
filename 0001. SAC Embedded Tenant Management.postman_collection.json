@@ -1,0 +1,285 @@
+{
+	"info": {
+		"_postman_id": "ba6c9a16-4357-4277-8d20-6b7da7f32cb7",
+		"name": "0001. SAC Embedded Tenant Management",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Token creation",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(pm.info.requestName+' '+pm.info.eventName+': Getting an access token using the SACtokenFQND as part of the access token URL');\r",
+							"const SAC_platform = pm.variables.get(\"SACplatform\");\r",
+							"if (SAC_platform==='NEO')\r",
+							"{\r",
+							"    pm.variables.set(\"oauthpath\",\"/oauth2/api/v1/\");\r",
+							"}\r",
+							"else if (SAC_platform==='CF') // we are on a Cloud Foundary Platform\r",
+							"{\r",
+							"   pm.variables.set(\"oauthpath\",\"/oauth/\");\r",
+							"}\r",
+							"else\r",
+							"{\r",
+							"    console.warn(pm.info.requestName+' '+pm.info.eventName+': Invalid SACplatform setting, assuming CF. Supported values: NEO, CF. SACplatform: '+ SAC_platform);\r",
+							"    pm.variables.set(\"oauthpath\",\"/oauth/\");\r",
+							"}\r",
+							"console.log(pm.info.requestName+' '+pm.info.eventName+': SACserviceFQDN : '+pm.variables.get(\"SACserviceFQDN\")+' (not used in this request)');\r",
+							"console.log(pm.info.requestName+' '+pm.info.eventName+': subaccauthurl   : '+pm.variables.get(\"subaccauthurl\"));\r",
+							"console.log(pm.info.requestName+' '+pm.info.eventName+': SACplatform    : '+pm.variables.get(\"SACplatform\"));\r",
+							"console.log(pm.info.requestName+' '+pm.info.eventName+': ClientID       : '+pm.variables.get(\"ClientID\"));\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"GET accesstoken\", function()\r",
+							"    {\r",
+							"    pm.expect(pm.response.code).to.equal(200)\r",
+							"    }\r",
+							");\r",
+							"\r",
+							"if (pm.response.code === 200)\r",
+							"    {\r",
+							"        const jsonData = JSON.parse(responseBody);\r",
+							"        pm.environment.set(\"accesstoken\", jsonData.access_token);  // setting the accesstoken so its re-used for all subsequent requests\r",
+							"        pm.environment.set(\"x-csrf-token\", \"fetch\");               // we will need to request a new csrf-token as we have a new session\r",
+							"        console.info(pm.info.requestName+' '+pm.info.eventName+': Great! A valid accesstoken was obtained. This means your SubAccount URL, SACplatform, Username and Password are all valid. You can now test the SAP Analytics Cloud tenant management REST API. The accesstoken provided was '+jsonData.access_token+' and will be re-presented in the header of subsequent requests');\r",
+							"        postman.setNextRequest();                                  // let the next request run (if being run in the runner)\r",
+							"    }\r",
+							"else if (pm.response.code === 401)\r",
+							"    {\r",
+							"        console.error(pm.info.requestName+' '+pm.info.eventName+': Invalid username or password: '+ responseBody);\r",
+							"        postman.setNextRequest(null);\r",
+							"    }\r",
+							"else\r",
+							"    {\r",
+							"        console.error(pm.info.requestName+' '+pm.info.eventName+': Unhandled error. Check your SACtokenFQDN is set correctly. Response Body: '+ responseBody);\r",
+							"        postman.setNextRequest(null);\r",
+							"    }\r",
+							"; // end if"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{ClientSecret}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{ClientID}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://{{subaccauthurl}}/oauth/token?grant_type=client_credentials",
+					"protocol": "https",
+					"host": [
+						"{{subaccauthurl}}"
+					],
+					"path": [
+						"oauth",
+						"token"
+					],
+					"query": [
+						{
+							"key": "grant_type",
+							"value": "client_credentials"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "OAuth addition",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accesstoken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \r\n   \"AddOAuthClient\":[  \r\n      {  \r\n         \"name\":\"SCIM\",\r\n         \"apiAccessEnabled\":\"true\",\r\n         \"apiRoles\":[  \r\n            \"PROFILE:sap.epm:SCIM_Public_API\"\r\n         ]\r\n      }\r\n   ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "html"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{sac_embedded_edition_service_config}}/api/v1/tenant/{{UUID}}/config",
+					"protocol": "https",
+					"host": [
+						"{{sac_embedded_edition_service_config}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"tenant",
+						"{{UUID}}",
+						"config"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Tenant config request",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Single Environment Setup OK\", function ()\r",
+							"    {\r",
+							"        pm.expect(pm.response.code).to.be.oneOf([200]);\r",
+							"    }\r",
+							");\r",
+							"\r",
+							"if ( (pm.response.code === 200) )\r",
+							"{\r",
+							"        // we are authorised and the csrf-tokem is also valid. We need to set the x-csrf-token so the call is quicker.\r",
+							"        // Performing a 'fetch' of the x-csrf-token makes the call longer and its unnecessary. Setting the x-csrf-token to a valid value\r",
+							"        // will speed things up by a small fraction (which can be a lot of time if making thousands of calls!)\r",
+							"        const csrftoken=pm.environment.get(\"x-csrf-token\");\r",
+							"        if (csrftoken===\"fetch\")\r",
+							"        {\r",
+							"            pm.environment.set(\"x-csrf-token\",postman.getResponseHeader(\"x-csrf-token\"));\r",
+							"        }\r",
+							"};\r",
+							"\r",
+							"if (pm.response.code === 401)\r",
+							"    {\r",
+							"        console.error(pm.info.requestName+' '+pm.info.eventName+': A HTTP 401 status was returned. This means this session is not authorised, likely due to an invalid access token. Response Body: '+ responseBody);\r",
+							"    }\r",
+							"else if (pm.response.code === 200)\r",
+							"    {\r",
+							"        const readbody    = JSON.parse(responseBody);\r",
+							"        const total_users_in_this_SAC_service= readbody.totalResults;\r",
+							"        console.info(pm.info.requestName+' '+pm.info.eventName+': Great! A valid response was obtained and means your SACserviceFQDN is set correctly. This SAP Analytics Cloud Service has '+total_users_in_this_SAC_service+' users. The x-csrf-token is '+pm.environment.get(\"x-csrf-token\")+' and this will be re-presented in the header of subsequent requests');\r",
+							"    }\r",
+							"else // response code is unexpected\r",
+							"   {\r",
+							"       // we got an unexpected response from the SAC API\r",
+							"        console.error(pm.info.requestName+' '+pm.info.eventName+': Unexpected error. Response Body:: '+ responseBody);\r",
+							"   }\r",
+							";\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJSUzI1NiIsImprdSI6Imh0dHBzOi8vaTMzNTk1My5hdXRoZW50aWNhdGlvbi5ldTEwLmhhbmEub25kZW1hbmQuY29tL3Rva2VuX2tleXMiLCJraWQiOiJkZWZhdWx0LWp3dC1rZXktNzQ5ODA1Mzk5IiwidHlwIjoiSldUIn0.eyJqdGkiOiJkYWJjMzU0ZDMzZmQ0YmJkYTJlMTRjZWE3YmU4NDhlZCIsImV4dF9hdHRyIjp7ImVuaGFuY2VyIjoiWFNVQUEiLCJzdWJhY2NvdW50aWQiOiI3OGI0ZGI3OC0yNzM3LTRmMTItYWU1Mi03ZGY1OTgxMzEyMmEiLCJ6ZG4iOiJpMzM1OTUzIiwic2VydmljZWluc3RhbmNlaWQiOiJmMTMxYjJhYy1mMDEzLTQ0MWItYjU3Ni1lZjJiMzMxMTY4M2EifSwic3ViIjoic2ItZjEzMWIyYWMtZjAxMy00NDFiLWI1NzYtZWYyYjMzMTE2ODNhIWIxMDEyMTh8c2FjLWVtYmVkZGVkLWVkaXRpb24tc2IhYjM2NTAiLCJhdXRob3JpdGllcyI6WyJ1YWEucmVzb3VyY2UiXSwic2NvcGUiOlsidWFhLnJlc291cmNlIl0sImNsaWVudF9pZCI6InNiLWYxMzFiMmFjLWYwMTMtNDQxYi1iNTc2LWVmMmIzMzExNjgzYSFiMTAxMjE4fHNhYy1lbWJlZGRlZC1lZGl0aW9uLXNiIWIzNjUwIiwiY2lkIjoic2ItZjEzMWIyYWMtZjAxMy00NDFiLWI1NzYtZWYyYjMzMTE2ODNhIWIxMDEyMTh8c2FjLWVtYmVkZGVkLWVkaXRpb24tc2IhYjM2NTAiLCJhenAiOiJzYi1mMTMxYjJhYy1mMDEzLTQ0MWItYjU3Ni1lZjJiMzMxMTY4M2EhYjEwMTIxOHxzYWMtZW1iZWRkZWQtZWRpdGlvbi1zYiFiMzY1MCIsImdyYW50X3R5cGUiOiJjbGllbnRfY3JlZGVudGlhbHMiLCJyZXZfc2lnIjoiMmY3Yzg0ZjgiLCJpYXQiOjE2Mjg1OTQzMTgsImV4cCI6MTYyODYzNzUxOCwiaXNzIjoiaHR0cHM6Ly9pMzM1OTUzLmF1dGhlbnRpY2F0aW9uLmV1MTAuaGFuYS5vbmRlbWFuZC5jb20vb2F1dGgvdG9rZW4iLCJ6aWQiOiI3OGI0ZGI3OC0yNzM3LTRmMTItYWU1Mi03ZGY1OTgxMzEyMmEiLCJhdWQiOlsic2ItZjEzMWIyYWMtZjAxMy00NDFiLWI1NzYtZWYyYjMzMTE2ODNhIWIxMDEyMTh8c2FjLWVtYmVkZGVkLWVkaXRpb24tc2IhYjM2NTAiLCJ1YWEiXX0.iBJYLkUlkRsle1AkkkwOkpsFeFA4MgwLNGH63hhCJJr-GZ2r4qJV_gsTUaQg_0-7BYy9iu9KMI3rfA9Z2s0PjioVJEPspISpI2r6_XjizoCa5EvVcOqNCDTQop7bU0GHXRhtUTvIaWKOtHrNj9-4XF8KMPGFzAqnL9ms6HBwrcCXRCJDYZP7Y3V1FT6IMLPeB7MkKltYm-IXyMjMxV6CNF-GxXE0qrlxgheu7Uh_sWvDQ3-yE4NDOzRZpaLwO64swWxD3hzQrQoL8eOR4lKPa-onuEjKEQO_xyPRngWxWUFuysLMm8HelA7hdKRwCwB1Er5NyZi2qSU4FY9kNNT2jA",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "x-sap-sac-custom-auth",
+						"type": "text",
+						"value": "true",
+						"disabled": true
+					},
+					{
+						"key": "x-csrf-token",
+						"type": "text",
+						"value": "fetch",
+						"disabled": true
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "https://{{sac_embedded_edition_service_config}}/api/v1/tenant/{{UUID}}",
+					"protocol": "https",
+					"host": [
+						"{{sac_embedded_edition_service_config}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"tenant",
+						"{{UUID}}"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
