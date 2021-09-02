@@ -50,7 +50,7 @@
 							"    {\r",
 							"        const jsonData = JSON.parse(responseBody);\r",
 							"        pm.environment.set(\"tenantaccesstoken\", jsonData.access_token);  // setting the accesstoken so its re-used for all subsequent requests\r",
-							"        console.info(pm.info.requestName+' '+pm.info.eventName+': Great! A valid accesstoken was obtained. This means your SubAccount URL, SACplatform, Username and Password are all valid. You can now test the SAP Analytics Cloud tenant management REST API. The accesstoken provided was '+jsonData.access_token+' and will be re-presented in the header of subsequent requests');\r",
+							"        console.info(pm.info.requestName+' '+pm.info.eventName+': Great! A valid TENANTaccesstoken was obtained. This means your SubAccount URL, SACplatform, Username and Password are all valid. You can now test the SAP Analytics Cloud tenant management REST API. The accesstoken provided was '+jsonData.access_token+' and will be re-presented in the header of subsequent requests');\r",
 							"        postman.setNextRequest();                                  // let the next request run (if being run in the runner)\r",
 							"    }\r",
 							"else if (pm.response.code === 401)\r",
@@ -202,11 +202,8 @@
 							"        // we are authorised and the csrf-tokem is also valid. We need to set the x-csrf-token so the call is quicker.\r",
 							"        // Performing a 'fetch' of the x-csrf-token makes the call longer and its unnecessary. Setting the x-csrf-token to a valid value\r",
 							"        // will speed things up by a small fraction (which can be a lot of time if making thousands of calls!)\r",
-							"        const csrftoken=pm.environment.get(\"x-csrf-token\");\r",
-							"        if (csrftoken===\"fetch\")\r",
-							"        {\r",
-							"            pm.environment.set(\"x-csrf-token\",postman.getResponseHeader(\"x-csrf-token\"));\r",
-							"        }\r",
+							"        \r",
+							"        \r",
 							"};\r",
 							"\r",
 							"if (pm.response.code === 401)\r",
@@ -215,9 +212,15 @@
 							"    }\r",
 							"else if (pm.response.code === 200)\r",
 							"    {\r",
-							"        const readbody    = JSON.parse(responseBody);\r",
-							"        const total_users_in_this_SAC_service= readbody.totalResults;\r",
-							"        console.info(pm.info.requestName+' '+pm.info.eventName+': Great! A valid response was obtained and means your SACserviceFQDN is set correctly. This SAP Analytics Cloud Service has '+total_users_in_this_SAC_service+' users. The x-csrf-token is '+pm.environment.get(\"x-csrf-token\")+' and this will be re-presented in the header of subsequent requests');\r",
+							"        var jsonData = JSON.parse(responseBody);\r",
+							"        var jsonNamesData = jsonData.oauthClients\r",
+							"        pm.environment.set(\"Username\", jsonNamesData[0].clientId);\r",
+							"        pm.environment.set(\"Password\", jsonNamesData[0].clientSecret);\r",
+							"        console.info(pm.info.requestName+' '+pm.info.eventName+': Great! A valid response was obtained and means your SACtokenFQDN and Tenant UUID are set correctly. You need to use the next ClientId and ClientSecret for SCIM API:');\r",
+							"        console.info('ClientId: '+pm.environment.get(\"Username\")+' as Username');\r",
+							"        console.info('ClientSecret: '+pm.environment.get(\"Password\")+' as Password');\r",
+							"        console.info('and this will be re-presented in the header of subsequent requests');\r",
+							"        \r",
 							"    }\r",
 							"else // response code is unexpected\r",
 							"   {\r",
@@ -238,7 +241,7 @@
 					"bearer": [
 						{
 							"key": "token",
-							"value": "{{accesstoken}}",
+							"value": "{{tenantaccesstoken}}",
 							"type": "string"
 						}
 					]
@@ -253,10 +256,10 @@
 					}
 				],
 				"url": {
-					"raw": "https://{{subaccauthurl}}/api/v1/tenant/{{tenant_uuid}}",
+					"raw": "https://{{SACtokenFQDN}}/api/v1/tenant/{{tenant_uuid}}",
 					"protocol": "https",
 					"host": [
-						"{{subaccauthurl}}"
+						"{{SACtokenFQDN}}"
 					],
 					"path": [
 						"api",

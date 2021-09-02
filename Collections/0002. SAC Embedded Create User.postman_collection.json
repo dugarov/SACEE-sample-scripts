@@ -237,7 +237,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"schemas\": [\r\n        \"urn:ietf:params:scim:schemas:core:2.0:User\",\r\n        \"urn:ietf:params:scim:schemas:extension:enterprise:2.0:User\"\r\n    ],\r\n    \"userName\":\"alexey.dugarov@sap.com\",\r\n    \"name\":\r\n    {\r\n        \"givenName\":\"Alexey\",\r\n        \"familyName\":\"Dugarov\"\r\n    },\r\n    \"displayName\":\"Alexey\",\r\n    \"emails\":[  \r\n        {  \r\n            \"value\":\"Alexey.Dugarov@sap.com\",\r\n            \"type\":\"work\",\r\n            \"primary\":true\r\n        }\r\n    ],\r\n    \"roles\":[\r\n        \"PROFILE:sap.epm:Embedded_BI_Admin\"\r\n    ],\r\n    \"groups\":[],\r\n    \"urn:scim:schemas:extension:enterprise:1.0\": {\r\n        \"manager\": {\r\n            \"managerId\": \"\"\r\n        }\r\n    }\r\n}",
+					"raw": "{\r\n    \"schemas\": [\r\n        \"urn:ietf:params:scim:schemas:core:2.0:User\",\r\n        \"urn:ietf:params:scim:schemas:extension:enterprise:2.0:User\"\r\n    ],\r\n    \"userName\":\"aadugarov\",\r\n    \"name\":\r\n    {\r\n        \"givenName\":\"Alexey\",\r\n        \"familyName\":\"Dugarov\"\r\n    },\r\n    \"displayName\":\"Alexey\",\r\n    \"emails\":[  \r\n        {  \r\n            \"value\":\"dugarov+111@gmail.com\",\r\n            \"type\":\"work\",\r\n            \"primary\":true\r\n        }\r\n    ],\r\n    \"roles\":[\r\n        \"PROFILE:sap.epm:Embedded_BI_Admin\"\r\n    ],\r\n    \"groups\":[],\r\n    \"urn:scim:schemas:extension:enterprise:1.0\": {\r\n        \"manager\": {\r\n            \"managerId\": \"\"\r\n        }\r\n    }\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
