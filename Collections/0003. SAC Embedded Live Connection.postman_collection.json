@@ -1,0 +1,284 @@
+{
+	"info": {
+		"_postman_id": "d7ca8800-d239-4f54-95a2-815912aa6982",
+		"name": "0003. SAC Embedded Live Connection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Token creation",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"console.log(pm.info.requestName+' '+pm.info.eventName+': Getting an access token using the SACtokenFQND as part of the access token URL');\r",
+							"const SAC_platform = pm.variables.get(\"SACplatform\");\r",
+							"if (SAC_platform==='NEO')\r",
+							"{\r",
+							"    pm.variables.set(\"oauthpath\",\"/oauth2/api/v1/\");\r",
+							"}\r",
+							"else if (SAC_platform==='CF') // we are on a Cloud Foundary Platform\r",
+							"{\r",
+							"   pm.variables.set(\"oauthpath\",\"/oauth/\");\r",
+							"}\r",
+							"else\r",
+							"{\r",
+							"    console.warn(pm.info.requestName+' '+pm.info.eventName+': Invalid SACplatform setting, assuming CF. Supported values: NEO, CF. SACplatform: '+ SAC_platform);\r",
+							"    pm.variables.set(\"oauthpath\",\"/oauth/\");\r",
+							"}\r",
+							"console.log(pm.info.requestName+' '+pm.info.eventName+': SACserviceFQDN : '+pm.variables.get(\"SACserviceFQDN\")+' (not used in this request)');\r",
+							"console.log(pm.info.requestName+' '+pm.info.eventName+': subaccauthurl   : '+pm.variables.get(\"subaccauthurl\"));\r",
+							"console.log(pm.info.requestName+' '+pm.info.eventName+': SACplatform    : '+pm.variables.get(\"SACplatform\"));\r",
+							"console.log(pm.info.requestName+' '+pm.info.eventName+': ClientID       : '+pm.variables.get(\"ClientID\"));\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"GET accesstoken\", function()\r",
+							"    {\r",
+							"    pm.expect(pm.response.code).to.equal(200)\r",
+							"    }\r",
+							");\r",
+							"\r",
+							"if (pm.response.code === 200)\r",
+							"    {\r",
+							"        const jsonData = JSON.parse(responseBody);\r",
+							"        pm.environment.set(\"tenantaccesstoken\", jsonData.access_token);  // setting the accesstoken so its re-used for all subsequent requests\r",
+							"        console.info(pm.info.requestName+' '+pm.info.eventName+': Great! A valid TENANTaccesstoken was obtained. This means your SubAccount URL, SACplatform, Username and Password are all valid. You can now test the SAP Analytics Cloud tenant management REST API. The accesstoken provided was '+jsonData.access_token+' and will be re-presented in the header of subsequent requests');\r",
+							"        postman.setNextRequest();                                  // let the next request run (if being run in the runner)\r",
+							"    }\r",
+							"else if (pm.response.code === 401)\r",
+							"    {\r",
+							"        console.error(pm.info.requestName+' '+pm.info.eventName+': Invalid username or password: '+ responseBody);\r",
+							"        postman.setNextRequest(null);\r",
+							"    }\r",
+							"else\r",
+							"    {\r",
+							"        console.error(pm.info.requestName+' '+pm.info.eventName+': Unhandled error. Check your SACtokenFQDN is set correctly. Response Body: '+ responseBody);\r",
+							"        postman.setNextRequest(null);\r",
+							"    }\r",
+							"; // end if"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{ClientSecret}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{ClientID}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://{{subaccauthurl}}/oauth/token?grant_type=client_credentials",
+					"protocol": "https",
+					"host": [
+						"{{subaccauthurl}}"
+					],
+					"path": [
+						"oauth",
+						"token"
+					],
+					"query": [
+						{
+							"key": "grant_type",
+							"value": "client_credentials"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AddLiveConnection",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{tenantaccesstoken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \r\n   \"AddLiveConnection\":[  \r\n      {  \r\n         \"type\":\"HANA\",\r\n         \"connectionType\":\"DIRECT\",\r\n         \"name\":\"HANACloud\",\r\n         \"description\":\"HANA Cloud instance\",\r\n         \"host\":\"<your_HANA_SQL_endpoint>\",\r\n         \"port\":\"443\",\r\n         \"language\":\"EN\",\r\n         \"authenticationMethod\":\"SAML\"\r\n      }\r\n   ]\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "html"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://{{SACtokenFQDN}}/api/v1/tenant/{{tenant_uuid}}/config",
+					"protocol": "https",
+					"host": [
+						"{{SACtokenFQDN}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"tenant",
+						"{{tenant_uuid}}",
+						"config"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Tenant config request",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Single Environment Setup OK\", function ()\r",
+							"    {\r",
+							"        pm.expect(pm.response.code).to.be.oneOf([200]);\r",
+							"    }\r",
+							");\r",
+							"\r",
+							"if ( (pm.response.code === 200) )\r",
+							"{\r",
+							"        // we are authorised and the csrf-tokem is also valid. We need to set the x-csrf-token so the call is quicker.\r",
+							"        // Performing a 'fetch' of the x-csrf-token makes the call longer and its unnecessary. Setting the x-csrf-token to a valid value\r",
+							"        // will speed things up by a small fraction (which can be a lot of time if making thousands of calls!)\r",
+							"        \r",
+							"        \r",
+							"};\r",
+							"\r",
+							"if (pm.response.code === 401)\r",
+							"    {\r",
+							"        console.error(pm.info.requestName+' '+pm.info.eventName+': A HTTP 401 status was returned. This means this session is not authorised, likely due to an invalid access token. Response Body: '+ responseBody);\r",
+							"    }\r",
+							"else if (pm.response.code === 200)\r",
+							"    {\r",
+							"        var jsonData = JSON.parse(responseBody);\r",
+							"        var jsonNamesData = jsonData.liveConnections\r",
+							"        console.info(pm.info.requestName+' '+pm.info.eventName+': Great! You have created a live-connection ');\r",
+							"        console.info('Name: '+ jsonNamesData[0].name);\r",
+							"        console.info('HANA system: ' + jsonNamesData[0].host);\r",
+							"        \r",
+							"    }\r",
+							"else // response code is unexpected\r",
+							"   {\r",
+							"       // we got an unexpected response from the SAC API\r",
+							"        console.error(pm.info.requestName+' '+pm.info.eventName+': Unexpected error. Response Body:: '+ responseBody);\r",
+							"   }\r",
+							";\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{tenantaccesstoken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "x-sap-sac-custom-auth",
+						"type": "text",
+						"value": "true",
+						"disabled": true
+					},
+					{
+						"key": "x-csrf-token",
+						"type": "text",
+						"value": "fetch",
+						"disabled": true
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "https://{{SACtokenFQDN}}/api/v1/tenant/{{tenant_uuid}}",
+					"protocol": "https",
+					"host": [
+						"{{SACtokenFQDN}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"tenant",
+						"{{tenant_uuid}}"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
